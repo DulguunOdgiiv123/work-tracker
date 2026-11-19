@@ -1,0 +1,1408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Work Tracker</title>
+<style>
+:root{
+  --bg:#f9f9f7;--surface:#fcfcfb;--surface-2:#f1f0ec;--hover:#e9e8e2;
+  --line:#e1e0d9;--line-strong:#c3c2b7;
+  --ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a65;
+  --accent:#2a78d6;--accent-ink:#1d5fae;--accent-track:#d6e6f9;--accent-soft:#eaf2fc;
+  --good:#0ca30c;--good-ink:#006300;--good-soft:#e6f4e6;
+  --serious:#ec835a;--crit:#d03b3b;--crit-ink:#b42d2d;--crit-soft:#fbeaea;
+  --review-bg:#fff2cc;--review-ink:#6b4a00;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 1px 6px rgba(0,0,0,.04);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d0d0d;--surface:#1a1a19;--surface-2:#141413;--hover:#262624;
+    --line:#2c2c2a;--line-strong:#383835;
+    --ink:#f0efec;--ink-2:#c3c2b7;--ink-3:#9b9a91;
+    --accent:#3987e5;--accent-ink:#8fbdf2;--accent-track:#1d3656;--accent-soft:#15243a;
+    --good-ink:#4fcf4f;--good-soft:#11291a;
+    --crit-ink:#f08080;--crit-soft:#3a1818;
+    --review-bg:#3d3011;--review-ink:#f5d78a;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d0d0d;--surface:#1a1a19;--surface-2:#141413;--hover:#262624;
+  --line:#2c2c2a;--line-strong:#383835;
+  --ink:#f0efec;--ink-2:#c3c2b7;--ink-3:#9b9a91;
+  --accent:#3987e5;--accent-ink:#8fbdf2;--accent-track:#1d3656;--accent-soft:#15243a;
+  --good-ink:#4fcf4f;--good-soft:#11291a;
+  --crit-ink:#f08080;--crit-soft:#3a1818;
+  --review-bg:#3d3011;--review-ink:#f5d78a;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:14px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+code{font-family:Consolas,ui-monospace,monospace;font-size:.92em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.btn{border:1px solid var(--line-strong);background:var(--surface);border-radius:7px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--hover)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--crit-ink);border-color:var(--line-strong)}
+.btn.small{padding:3px 9px;font-size:12.5px}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--hover)}
+.btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
+input[type=text],input[type=search],input[type=date],select,textarea{background:var(--surface);border:1px solid var(--line-strong);border-radius:7px;padding:6px 9px;min-width:0}
+textarea{resize:vertical;width:100%}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px 16px;padding:10px 20px;flex-wrap:wrap}
+.brand{font-weight:650;font-size:15px;letter-spacing:.1px}
+.today-label{color:var(--ink-2)}
+.tabs{display:flex;gap:2px;background:var(--surface-2);padding:3px;border-radius:9px;border:1px solid var(--line)}
+.tabs button{border:0;background:transparent;padding:5px 14px;border-radius:6px;color:var(--ink-2);cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-weight:600}
+.spacer{flex:1}
+.savechip{font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.savechip i{width:8px;height:8px;border-radius:50%;background:var(--line-strong);display:inline-block}
+.savechip[data-s=saved] i{background:var(--good)}
+.savechip[data-s=pending] i{background:var(--accent)}
+.savechip[data-s=error] i{background:var(--crit)}
+.savechip[data-s=error]{color:var(--crit-ink)}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+
+.banner{margin:12px 20px 0;padding:9px 14px;border-radius:8px;background:var(--accent-soft);color:var(--accent-ink);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.banner.warn{background:var(--crit-soft);color:var(--crit-ink)}
+
+main{padding:18px 20px 60px;max-width:1440px;margin:0 auto}
+h2.vh{font-size:18px;margin:0 0 2px;font-weight:650}
+.sub{color:var(--ink-2);margin:0 0 14px}
+.muted{color:var(--ink-3)}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.toolbar input[type=search]{width:240px}
+
+/* chips */
+.tag{background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:0 6px;font-size:12px;color:var(--ink-2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prio{font-size:12px;color:var(--ink-2);display:inline-flex;align-items:center;gap:4px}
+.prio::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--line-strong)}
+.prio.high::before{background:var(--crit)}
+.prio.medium::before{background:var(--serious);opacity:.55}
+.badge{font-size:11.5px;border-radius:5px;padding:0 6px;font-weight:600}
+.badge.review{background:var(--review-bg);color:var(--review-ink)}
+.badge.today{background:var(--accent-soft);color:var(--accent-ink)}
+.badge.overdue{background:var(--crit-soft);color:var(--crit-ink)}
+.st{font-size:12px;display:inline-flex;align-items:center;gap:5px;color:var(--ink-2)}
+.st::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--line-strong)}
+.st.doing::before{background:var(--accent)}
+.st.done::before{background:var(--good)}
+.st.postponed::before{background:transparent;border:1.5px solid var(--ink-3);width:6px;height:6px}
+
+/* meter: track is a lighter step of the fill's own ramp */
+.meter{height:4px;background:var(--accent-track);border-radius:2px;overflow:hidden}
+.meter>i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.meter.big{height:8px;border-radius:4px}
+.meter.big>i{border-radius:4px}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:9px 11px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.card:hover{border-color:var(--line-strong)}
+.card.dragging{opacity:.45}
+.card .t{font-weight:600;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.card.done .t{color:var(--ink-2);font-weight:500}
+.meta{display:flex;flex-wrap:wrap;gap:5px 8px;align-items:center;font-size:12px;color:var(--ink-2)}
+
+/* today */
+.today-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.panel h3{margin:0 0 10px;font-size:14px;display:flex;align-items:center;gap:8px}
+.panel h3 .count{color:var(--ink-3);font-weight:500}
+.picked{display:flex;flex-direction:column;gap:8px}
+.prow{border:1px solid var(--line);border-radius:9px;padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;background:var(--surface)}
+.prow.done{background:var(--surface-2)}
+.prow.done .t{text-decoration:line-through;color:var(--ink-3)}
+.prow .t{font-weight:600;cursor:pointer;word-break:break-word}
+.prow .ctl{display:flex;gap:4px;align-items:start}
+.prow .prog{grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink-2)}
+.prow .prog input{flex:1;max-width:260px;accent-color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:3px 9px;font-size:12.5px;cursor:pointer;color:var(--ink-2)}
+.seg button+button{border-left:1px solid var(--line-strong)}
+.seg button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.pick-sec{margin-top:14px}
+.pick-sec:first-of-type{margin-top:0}
+.pick-sec h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-3);display:flex;justify-content:space-between;align-items:center}
+.cand{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:start;padding:7px 4px;border-top:1px solid var(--line)}
+.cand:first-of-type{border-top:0}
+.cand .t{cursor:pointer;word-break:break-word}
+.cand .t:hover{text-decoration:underline}
+.cand .meta{grid-column:2}
+.empty{color:var(--ink-3);padding:14px 4px;font-size:13px}
+
+/* board */
+.board{display:grid;grid-template-columns:repeat(4,minmax(240px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px;align-items:start}
+.col{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:240px}
+.col.drop{outline:2px dashed var(--accent);outline-offset:-2px}
+.col>header{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 4px;font-weight:600;font-size:13px}
+.col>header .count{color:var(--ink-3);font-weight:500}
+.col .more{font-size:12px;color:var(--ink-3);text-align:center;padding:4px}
+
+/* week */
+.weeknav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.weeknav .wk{font-size:18px;font-weight:650;min-width:270px}
+.stats{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px}
+.stat .v{font-size:24px;font-weight:650;line-height:1.1}
+.stat .l{font-size:12px;color:var(--ink-2)}
+.stat.wide{min-width:220px;flex:0 1 320px}
+.stat.wide .meter{margin-top:6px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--ink-2);font-size:12px;background:var(--surface-2);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.nowrap{white-space:nowrap}
+td .t{font-weight:600;cursor:pointer}
+td .t:hover{text-decoration:underline}
+.week-bottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:18px}
+.week-bottom label{font-weight:600;font-size:13px;display:block;margin-bottom:6px}
+pre.report{white-space:pre-wrap;word-break:break-word;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0;font:12.5px/1.5 Consolas,ui-monospace,monospace;max-height:340px;overflow:auto}
+.copyrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+
+/* connect */
+.connect{max-width:560px;margin:12vh auto 0;padding:28px 30px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.connect h1{margin:0 0 8px;font-size:22px}
+.connect ol{padding-left:20px;color:var(--ink-2)}
+.connect .err{color:var(--crit-ink);white-space:pre-wrap}
+
+/* dialogs */
+dialog{border:1px solid var(--line-strong);border-radius:14px;padding:0;background:var(--surface);color:var(--ink);width:min(680px,94vw);box-shadow:0 10px 40px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+dialog form{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+dialog h2{margin:0;font-size:17px}
+.f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--ink-2);font-weight:600}
+.f input,.f select,.f textarea{font-weight:400;color:var(--ink);font-size:14px}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.check{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);font-weight:500;cursor:pointer}
+.progf{display:flex;align-items:center;gap:10px}
+.progf input{flex:1;accent-color:var(--accent)}
+.progf output{min-width:42px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+.src{font-size:12px;color:var(--ink-3);margin:0}
+.dlg-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px}
+#impDlg{width:min(980px,96vw)}
+#impDlg .tablewrap{max-height:55vh;overflow:auto}
+.act{font-size:12px;font-weight:600;border-radius:5px;padding:1px 7px;white-space:nowrap}
+.act.new{background:var(--good-soft);color:var(--good-ink)}
+.act.update{background:var(--accent-soft);color:var(--accent-ink)}
+.act.skip{background:var(--surface-2);color:var(--ink-3)}
+.act.invalid{background:var(--crit-soft);color:var(--crit-ink)}
+.problems{color:var(--crit-ink);font-size:12px}
+
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:9px;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.25);z-index:50;max-width:min(640px,92vw)}
+.toast.err{background:var(--crit);color:#fff}
+
+@media (max-width:900px){
+  .today-grid,.week-bottom{grid-template-columns:1fr}
+  .top{padding:10px 16px}
+  main{padding:16px 16px 60px}
+  .toolbar input[type=search]{width:100%}
+  .row3{grid-template-columns:1fr 1fr}
+}
+/* work log */
+.today-grid>div{display:flex;flex-direction:column;gap:20px;min-width:0}
+.logs{display:flex;flex-direction:column}
+.logrow{display:grid;grid-template-columns:46px minmax(0,1fr);gap:8px;padding:6px 2px;border-top:1px solid var(--line);font-size:13px;word-break:break-word}
+.logrow:first-child{border-top:0}
+.logrow time{color:var(--ink-3);font-variant-numeric:tabular-nums}
+.logrow .src{font-size:11.5px;color:var(--ink-3)}
+.logadd{display:flex;gap:6px;margin-top:10px}
+.logadd input{flex:1}
+.loglabel{margin-top:16px}
+.daylog{margin-bottom:10px}
+.daylog h4{margin:6px 0 2px;font-size:12px;color:var(--ink-2);font-weight:600}
+.lockform{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.lockform input[type=password]{width:100%}
+</style>
+</head>
+<body>
+
+<section id="lock" class="connect" hidden>
+  <h1>Work Tracker</h1>
+  <p id="lockMsg">The data is encrypted. Enter your tracker password.</p>
+  <form id="lockForm" class="lockform">
+    <label class="f">Password <input type="password" id="pw" autocomplete="current-password" required></label>
+    <label class="check"><input type="checkbox" id="remember"> Remember on this device (anyone using this browser profile can open it)</label>
+    <p class="err" id="lockErr"></p>
+    <div class="actions"><button class="btn primary" id="btnUnlock">Unlock</button></div>
+  </form>
+</section>
+
+<div id="app" hidden>
+  <header class="top">
+    <span class="brand">Work Tracker</span>
+    <span class="today-label" id="todayLabel"></span>
+    <nav class="tabs" role="tablist" aria-label="Views">
+      <button role="tab" data-act="tab" data-view="today">Today</button>
+      <button role="tab" data-act="tab" data-view="board">Board</button>
+      <button role="tab" data-act="tab" data-view="week">Week</button>
+    </nav>
+    <span class="spacer"></span>
+    <span class="savechip" id="saveChip" data-s="idle"><i></i><span></span></span>
+    <div class="actions">
+      <button class="btn" data-act="import" title="Add tasks from an inbox.json file">Import</button>
+      <button class="btn" data-act="export" title="Download an UNENCRYPTED copy of all data">Export</button>
+      <button class="btn" data-act="settings">Settings</button>
+      <button class="btn" data-act="theme" id="btnTheme">Theme: Auto</button>
+      <button class="btn primary" data-act="new" title="Shortcut: N">+ New task</button>
+    </div>
+  </header>
+  <div id="banners"></div>
+  <main id="view"></main>
+</div>
+
+<datalist id="projects"></datalist>
+
+<dialog id="editDlg">
+  <form method="dialog" id="editForm">
+    <h2 id="dlgTitle">Edit task</h2>
+    <label class="f">Title <input type="text" name="title" required autocomplete="off"></label>
+    <label class="f">Detail <textarea name="detail" rows="3"></textarea></label>
+    <div class="row3">
+      <label class="f">Status <select name="status"></select></label>
+      <label class="f">Priority <select name="priority"></select></label>
+      <label class="f">Project <input type="text" name="project" list="projects" autocomplete="off"></label>
+    </div>
+    <div class="f">Progress
+      <div class="progf"><input type="range" name="progress" min="0" max="100" step="5" aria-label="Progress"><output id="progOut">0%</output></div>
+    </div>
+    <div class="row3">
+      <label class="f">Started <input type="date" name="start"></label>
+      <label class="f">Due / finished <input type="date" name="due"></label>
+      <div class="f">&nbsp;<label class="check"><input type="checkbox" name="today"> On today's list</label></div>
+    </div>
+    <label class="f">Notes <textarea name="notes" rows="2"></textarea></label>
+    <p class="src" id="dlgSrc"></p>
+    <div class="dlg-actions">
+      <button type="button" class="btn danger" id="btnDelete">Delete</button>
+      <span class="spacer"></span>
+      <label class="check" id="reviewedWrap"><input type="checkbox" name="reviewed"> Reviewed</label>
+      <button class="btn" value="cancel" formnovalidate>Cancel</button>
+      <button class="btn primary" value="save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="impDlg">
+  <form method="dialog" id="impForm">
+    <h2>Import from inbox.json</h2>
+    <p class="src" id="impInfo"></p>
+    <div class="tablewrap"><table><thead><tr><th></th><th>Action</th><th>Week</th><th>Task</th><th>Status</th><th>Progress</th><th>Key</th></tr></thead><tbody id="impBody"></tbody></table></div>
+    <div class="dlg-actions">
+      <span class="src">New = added to the board. Update = same title already exists, so this week's status is added to its history. Skip = already imported.</span>
+      <span class="spacer"></span>
+      <button class="btn" value="cancel" formnovalidate>Cancel</button>
+      <button class="btn primary" value="apply" id="impApply">Import</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="setDlg">
+  <form method="dialog" id="setForm">
+    <h2>Settings</h2>
+    <p class="src">To save changes from this page, add a GitHub fine-grained token that can only write to the
+      <code>work-tracker</code> repository (Repository permissions: Contents = Read and write).
+      It is stored on this device, encrypted with your tracker key. Without it the page is read-only.</p>
+    <label class="f">GitHub token <input type="password" name="token" autocomplete="off" placeholder="github_pat_…"></label>
+    <p class="src" id="tokStatus"></p>
+    <div class="dlg-actions">
+      <button type="button" class="btn danger" id="btnForget">Forget this device</button>
+      <button type="button" class="btn" id="btnLock">Lock now</button>
+      <span class="spacer"></span>
+      <button class="btn" value="cancel" formnovalidate>Close</button>
+      <button class="btn primary" value="save">Save token</button>
+    </div>
+  </form>
+</dialog>
+
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+
+<script>
+'use strict';
+(() => {
+/* ---------- where the data lives ---------- */
+const OWNER = 'DulguunOdgiiv123', REPO = 'work-tracker', FILE = 'tracker.enc.json';
+const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
+const NOREPLY = {name: 'work-tracker', email: 'DulguunOdgiiv123@users.noreply.github.com'};
+const params = new URLSearchParams(location.search);
+let BRANCH = params.get('branch') || 'data';
+
+/* ---------- constants ---------- */
+const STATUS = ['todo', 'doing', 'done', 'postponed'];
+const STATUS_EN = {todo: 'To do', doing: 'Doing', done: 'Done', postponed: 'Postponed'};
+const STATUS_MN = {todo: 'Төлөвлөсөн', doing: 'Хийгдэж байгаа', done: 'Дууссан', postponed: 'Хойшилсон'};
+const REPORT_ORDER = {done: 0, doing: 1, todo: 2, postponed: 3};
+const PRIO = ['high', 'medium', 'low'];
+const PRIO_EN = {high: 'High', medium: 'Medium', low: 'Low'};
+const PRIO_MN = {high: 'Өндөр', medium: 'Дунд', low: 'Бага'};
+const PRIO_RANK = {high: 0, medium: 1, low: 2};
+const REPORT_HEAD = ['#', 'Ажлын нэр', 'Дэлгэрэнгүй мэдээлэл', 'Эхэлсэн', 'Дуусах', 'Төлөв', 'Явц %', 'Чухал', 'Тэмдэглэл'];
+const DAYS_MN = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
+const DONE_DAYS = 14;
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/* ---------- small helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const isYmd = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && ymd(parseYmd(s)) === s;
+const todayStr = () => ymd(new Date());
+const addDays = (s, n) => { const d = parseYmd(s); d.setDate(d.getDate() + n); return ymd(d); };
+const mondayOf = s => addDays(s, -((parseYmd(s).getDay() + 6) % 7));
+const isoWeek = s => {
+  const d = parseYmd(s);
+  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+  const jan4 = new Date(d.getFullYear(), 0, 4);
+  return 1 + Math.round(((d - jan4) / 864e5 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
+};
+const dotDate = s => s ? s.replace(/-/g, '.') : '';
+const fmtShort = s => { const d = parseYmd(s); return `${d.getDate()} ${MONTHS[d.getMonth()]}`; };
+const fmtLong = s => { const d = parseYmd(s); return `${DAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
+const nowIso = () => new Date().toISOString();
+const hhmm = () => new Date().toTimeString().slice(0, 5);
+const uid = () => 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const norm = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+const byD = (a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0);
+const clampPct = n => Math.max(0, Math.min(100, Math.round(Number(n) || 0)));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pref = {
+  get(k) { try { return localStorage.getItem('wt.' + k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem('wt.' + k, v); } catch { /* storage blocked */ } },
+  del(k) { try { localStorage.removeItem('wt.' + k); } catch { /* storage blocked */ } },
+  json(k) { try { return JSON.parse(this.get(k) || 'null'); } catch { return null; } },
+};
+
+/* ---------- encryption (same format as tools/wt.py) ---------- */
+const te = new TextEncoder(), td = new TextDecoder();
+const b64e = buf => { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
+const b64d = s => Uint8Array.from(atob(String(s).replace(/\s/g, '')), c => c.charCodeAt(0));
+async function deriveKey(password, salt, iter) {
+  const base = await crypto.subtle.importKey('raw', te.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter}, base,
+    {name: 'AES-GCM', length: 256}, true, ['encrypt', 'decrypt']);
+}
+const importRawKey = b64 => crypto.subtle.importKey('raw', b64d(b64), {name: 'AES-GCM'}, true, ['encrypt', 'decrypt']);
+async function decryptJson(blob, k) {
+  if (!blob || blob.v !== 1) throw new Error('unknown file version');
+  return JSON.parse(td.decode(await crypto.subtle.decrypt({name: 'AES-GCM', iv: b64d(blob.iv)}, k, b64d(blob.ct))));
+}
+async function encryptJson(obj, k, like) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name: 'AES-GCM', iv}, k, te.encode(JSON.stringify(obj)));
+  return {v: 1, kdf: 'PBKDF2-SHA256', iter: like.iter, salt: like.salt, iv: b64e(iv), ct: b64e(ct)};
+}
+
+/* ---------- data model ---------- */
+function emptyState() { return {version: 1, items: [], weekNotes: {}, log: [], meta: {}}; }
+function fixItem(it) {
+  const now = nowIso();
+  const o = Object.assign({
+    id: uid(), title: '', detail: '', status: 'todo', progress: 0, priority: 'medium',
+    start: null, due: null, done_on: null, week: mondayOf(todayStr()), project: '',
+    today: null, notes: '', source: 'manual', source_keys: [], reviewed: true, log: [],
+    created: now, updated: now,
+  }, it || {});
+  if (!STATUS.includes(o.status)) o.status = 'todo';
+  if (!PRIO.includes(o.priority)) o.priority = 'medium';
+  o.progress = clampPct(o.progress);
+  if (!Array.isArray(o.source_keys)) o.source_keys = [];
+  if (!Array.isArray(o.log)) o.log = [];
+  return o;
+}
+function normalizeState(s) {
+  s = s && typeof s === 'object' ? s : {};
+  return {
+    version: 1,
+    items: Array.isArray(s.items) ? s.items.map(fixItem) : [],
+    weekNotes: s.weekNotes && typeof s.weekNotes === 'object' ? s.weekNotes : {},
+    log: Array.isArray(s.log) ? s.log.filter(e => e && isYmd(e.d) && typeof e.text === 'string') : [],
+    meta: s.meta && typeof s.meta === 'object' ? s.meta : {},
+  };
+}
+const byId = (s, id) => s.items.find(i => i.id === id);
+/* Record today's status/progress in the item's history (one entry per day). */
+function touch(it, d = todayStr()) {
+  if (it.status === 'done') { it.progress = 100; if (!it.done_on) it.done_on = d; } else it.done_on = null;
+  if (it.status === 'doing' && !it.start) it.start = d;
+  const e = it.log.find(x => x.d === d);
+  if (e) { e.s = it.status; e.p = it.progress; } else { it.log.push({d, s: it.status, p: it.progress}); it.log.sort(byD); }
+  it.updated = nowIso();
+}
+/* A task belongs to week W if it was created for W or touched during W. */
+function inWeek(it, wk) {
+  const end = addDays(wk, 6);
+  return it.week === wk || it.log.some(e => e.d >= wk && e.d <= end);
+}
+/* Status and progress as they were at the end of week W. */
+function stateAt(it, wk) {
+  const end = addDays(wk, 6);
+  let last = null;
+  for (const e of it.log) if (e.d <= end && (!last || e.d >= last.d)) last = e;
+  return last ? {status: last.s, progress: last.p} : {status: it.status, progress: it.progress};
+}
+function weekRows(items, wk) {
+  return items.filter(i => inWeek(i, wk))
+    .map(it => ({it, ...stateAt(it, wk)}))
+    .sort((a, b) => REPORT_ORDER[a.status] - REPORT_ORDER[b.status]
+      || PRIO_RANK[a.it.priority] - PRIO_RANK[b.it.priority]
+      || a.it.title.localeCompare(b.it.title));
+}
+function weekLog(log, wk) {
+  const end = addDays(wk, 6);
+  return log.filter(e => e.d >= wk && e.d <= end).sort((a, b) => (a.d + (a.t || '')).localeCompare(b.d + (b.t || '')));
+}
+function weekStats(rows) {
+  const n = rows.length, done = rows.filter(r => r.status === 'done').length;
+  const doing = rows.filter(r => r.status === 'doing').length;
+  return {n, done, doing, pct: n ? Math.round(done / n * 100) : 0};
+}
+function finishCell(r) { return r.status === 'done' ? (r.it.done_on || r.it.due || '') : (r.it.due || ''); }
+
+/* ---------- weekly report (Mongolian, paste-ready for the weekly Excel template) ---------- */
+function tsvCell(v) {
+  if (v == null) return '';
+  const s = String(v).replace(/\t/g, ' ');
+  return /[\r\n"]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function reportTSV(rows, withHeader) {
+  const lines = rows.map((r, i) => [
+    i + 1, r.it.title, r.it.detail, r.it.start || '', finishCell(r),
+    STATUS_MN[r.status], r.progress + '%', PRIO_MN[r.it.priority] || '', r.it.notes,
+  ].map(tsvCell).join('\t'));
+  return (withHeader ? [REPORT_HEAD.join('\t')] : []).concat(lines).join('\r\n');
+}
+function reportText(rows, wk, note, log = []) {
+  const s = weekStats(rows);
+  const out = [
+    `Ажлын тайлан: ${dotDate(wk)} — ${dotDate(addDays(wk, 4))} (W${isoWeek(wk)})`,
+    `Нийт даалгавар: ${s.n} · Дууссан: ${s.done} · Хийгдэж буй: ${s.doing} · Гүйцэтгэл: ${s.pct}%`,
+  ];
+  let n = 0;
+  for (const st of ['done', 'doing', 'todo', 'postponed']) {
+    const group = rows.filter(r => r.status === st);
+    if (!group.length) continue;
+    out.push('', STATUS_MN[st]);
+    for (const r of group) {
+      n++;
+      const pct = st === 'doing' ? ` (${r.progress}%)` : '';
+      const det = r.it.detail ? ` — ${r.it.detail.replace(/\s*\n\s*/g, ' ')}` : '';
+      out.push(`${n}. ${r.it.title}${pct}${det}`);
+    }
+  }
+  if (log.length) {
+    out.push('', 'Өдөр тутмын тэмдэглэл');
+    const days = [...new Set(log.map(e => e.d))];
+    for (const d of days) {
+      out.push(`${dotDate(d).slice(5)} (${DAYS_MN[parseYmd(d).getDay()]})`);
+      for (const e of log.filter(x => x.d === d)) out.push(`  - ${e.project ? e.project + ': ' : ''}${e.text}`);
+    }
+  }
+  if (note && note.trim()) out.push('', 'Шуурхай санал', note.trim());
+  return out.join('\n');
+}
+
+/* ---------- import (inbox.json written by the collector) ---------- */
+function validateInbox(x) {
+  const p = [];
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return ['row is not an object'];
+  if (typeof x.title !== 'string' || !x.title.trim()) p.push('title is empty');
+  if (!isYmd(x.week)) p.push(`week ${JSON.stringify(x.week)} is not YYYY-MM-DD`);
+  else if (mondayOf(x.week) !== x.week) p.push(`week ${x.week} is not a Monday`);
+  if (!STATUS.includes(x.status)) p.push(`status ${JSON.stringify(x.status)} is not todo/doing/done/postponed`);
+  if (typeof x.progress !== 'number' || !Number.isFinite(x.progress) || x.progress < 0 || x.progress > 100) p.push(`progress ${JSON.stringify(x.progress)} is not a number 0-100`);
+  if (x.priority != null && !PRIO.includes(x.priority)) p.push(`priority ${JSON.stringify(x.priority)} is not high/medium/low/null`);
+  for (const k of ['start', 'due']) if (x[k] != null && !isYmd(x[k])) p.push(`${k} ${JSON.stringify(x[k])} is not YYYY-MM-DD or null`);
+  if (typeof x.source_key !== 'string' || !x.source_key) p.push('source_key is missing');
+  return p;
+}
+const byWeekThenIndex = (a, b) => (a.x.week < b.x.week ? -1 : a.x.week > b.x.week ? 1 : a.i - b.i);
+function indexItems(items) {
+  const byKey = new Map(), byTitle = new Map();
+  const add = it => {
+    for (const k of it.source_keys || []) byKey.set(k, it);
+    const t = norm(it.title);
+    if (!byTitle.has(t)) byTitle.set(t, it);
+  };
+  items.forEach(add);
+  return {byKey, byTitle, add};
+}
+function planImport(list, items) {
+  const {byKey, byTitle} = indexItems(items);
+  const rows = list.map((x, i) => ({x, i, problems: validateInbox(x)}));
+  const seen = new Set();
+  for (const r of rows.filter(r => !r.problems.length).sort(byWeekThenIndex)) {
+    const k = r.x.source_key, t = norm(r.x.title);
+    if (byKey.has(k) || seen.has(k)) r.action = 'skip';
+    else if (byTitle.has(t)) r.action = 'update';
+    else { r.action = 'new'; byTitle.set(t, {pending: true}); }
+    seen.add(k);
+  }
+  for (const r of rows) if (r.problems.length) r.action = 'invalid';
+  const order = {invalid: 0, new: 1, update: 2, skip: 3};
+  return rows.sort((a, b) => order[a.action] - order[b.action] || byWeekThenIndex(a, b));
+}
+function itemFromInbox(x) {
+  const thisWeek = mondayOf(todayStr());
+  const it = fixItem({
+    title: x.title.trim(), detail: x.detail || '', status: x.status, progress: x.progress,
+    priority: x.priority || 'medium', start: x.start || null, due: x.due || null,
+    week: x.week, notes: x.notes || '', source: 'xlsx', source_keys: [x.source_key],
+    reviewed: x.status === 'done' || x.week >= addDays(thisWeek, -7),
+  });
+  if (it.status === 'done') { it.progress = 100; it.done_on = x.due || addDays(x.week, 4); }
+  it.log.push({d: x.week, s: it.status, p: it.progress});
+  return it;
+}
+function mergeInto(it, x) {
+  it.source_keys.push(x.source_key);
+  const latest = it.log.reduce((m, e) => (e.d > m ? e.d : m), '');
+  const p = x.status === 'done' ? 100 : clampPct(x.progress);
+  const e = it.log.find(e => e.d === x.week);
+  if (e) { e.s = x.status; e.p = p; } else { it.log.push({d: x.week, s: x.status, p}); it.log.sort(byD); }
+  if (!latest || x.week >= mondayOf(latest)) {
+    it.status = x.status; it.progress = p;
+    it.done_on = x.status === 'done' ? (it.done_on || x.due || addDays(x.week, 4)) : null;
+    if (x.priority) it.priority = x.priority;
+  }
+  for (const k of ['detail', 'start', 'due', 'notes']) if (!it[k] && x[k]) it[k] = x[k];
+  it.updated = nowIso();
+}
+function applyImport(rows, items) {
+  const counts = {new: 0, update: 0, skip: 0};
+  const idx = indexItems(items);
+  for (const r of [...rows].sort(byWeekThenIndex)) {
+    const x = r.x;
+    if (idx.byKey.has(x.source_key)) { counts.skip++; continue; }
+    const t = idx.byTitle.get(norm(x.title));
+    if (t) { mergeInto(t, x); idx.byKey.set(x.source_key, t); counts.update++; }
+    else { const it = itemFromInbox(x); items.push(it); idx.add(it); counts.new++; }
+  }
+  return counts;
+}
+
+/* ---------- GitHub sync ---------- */
+let mode = 'live';            // live | demo
+let state = emptyState();
+let key = null, token = null; // AES key (from the password) and GitHub token
+let remote = null, etag = null, lastSync = null;
+let pending = [], saving = false, flushTimer = null, pollTimer = null, renderLater = false;
+
+async function httpError(r) {
+  let msg = `GitHub answered ${r.status}`;
+  try { const j = await r.json(); if (j.message) msg += `: ${j.message}`; } catch { /* no body */ }
+  if ((r.status === 403 || r.status === 429) && r.headers.get('x-ratelimit-remaining') === '0') msg = 'GitHub rate limit reached. Add a token in Settings, or wait a few minutes.';
+  if (r.status === 401) msg = 'The GitHub token was refused (expired or revoked). Add a new one in Settings.';
+  if (r.status === 403 && token && !/rate limit/.test(msg)) msg = 'The GitHub token cannot write to work-tracker. It needs Contents: Read and write on that repository.';
+  return new Error(msg);
+}
+/* Returns {blob, sha}; null when the file does not exist; undefined when unchanged since the last read. */
+async function ghGet(force) {
+  const h = {Accept: 'application/vnd.github+json'};
+  if (token) h.Authorization = 'Bearer ' + token;
+  if (!force && etag) h['If-None-Match'] = etag;
+  const r = await fetch(`${API}/contents/${FILE}?ref=${encodeURIComponent(BRANCH)}`, {headers: h, cache: 'no-store'});
+  if (r.status === 304) return undefined;
+  if (r.status === 404) return null;
+  if (!r.ok) throw await httpError(r);
+  etag = r.headers.get('ETag');
+  const j = await r.json();
+  return {blob: JSON.parse(atob(j.content.replace(/\s/g, ''))), sha: j.sha};
+}
+async function ghPut(blob, sha) {
+  const r = await fetch(`${API}/contents/${FILE}`, {
+    method: 'PUT',
+    headers: {Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + token, 'Content-Type': 'application/json'},
+    body: JSON.stringify({message: 'update', branch: BRANCH, sha, content: btoa(JSON.stringify(blob)), committer: NOREPLY, author: NOREPLY}),
+  });
+  if (r.status === 409 || r.status === 422) { const e = new Error('someone else saved first'); e.conflict = true; throw e; }
+  if (!r.ok) throw await httpError(r);
+  return (await r.json()).content.sha;
+}
+/* Every change is a function applied to the state. It runs on the local copy right away, and
+   again on the newest copy from GitHub when saving, so changes from Claude are never overwritten. */
+function mutate(op, opts = {}) {
+  op(state);
+  if (mode === 'live') {
+    pending.push(op);
+    clearTimeout(flushTimer);
+    flushTimer = setTimeout(flush, 700);
+  }
+  setSync();
+  if (!opts.quiet) render();
+}
+async function flush() {
+  if (mode !== 'live' || !pending.length || saving) return;
+  if (!token) { setSync(); return; }
+  saving = true; setSync();
+  const ops = pending.splice(0);
+  let ok = false;
+  try {
+    for (let attempt = 0; ; attempt++) {
+      const fresh = await ghGet(true);
+      if (!fresh) throw new Error('the tracker file is missing on GitHub');
+      const s = normalizeState(await decryptJson(fresh.blob, key));
+      ops.forEach(op => op(s));
+      const out = await encryptJson(s, key, fresh.blob);
+      try {
+        await ghPut(out, fresh.sha);
+        etag = null; remote = {blob: out}; state = s;
+        pending.forEach(op => op(state));  // changes made while this save was running
+        lastSync = new Date(); ok = true; clearBanner('sync');
+        break;
+      } catch (e) {
+        if (!e.conflict || attempt >= 4) throw e;
+        await sleep(400 * (attempt + 1));
+      }
+    }
+  } catch (e) {
+    pending.unshift(...ops);
+    showBanner('sync', `Not saved yet: ${esc(e.message)}`, true, 'Retry');
+  } finally {
+    saving = false; setSync(); safeRender();
+    if (ok && pending.length) flushTimer = setTimeout(flush, 300);
+  }
+}
+async function poll() {
+  if (mode !== 'live' || !key || saving || pending.length || document.hidden) return;
+  try {
+    const r = await ghGet(false);
+    if (r === undefined) { lastSync = new Date(); setSync(); return; }
+    if (r === null) throw new Error('the tracker file is missing on GitHub');
+    const s = normalizeState(await decryptJson(r.blob, key));
+    if (saving || pending.length) return;
+    remote = r; state = s; lastSync = new Date(); clearBanner('sync'); setSync(); safeRender();
+  } catch (e) {
+    if (e.name === 'OperationError') showBanner('sync', 'The data was re-encrypted with another password. Lock and unlock again.', true);
+    else setSync('error', e.message);
+  }
+}
+function schedulePoll() {
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(async () => { await poll(); schedulePoll(); }, token ? 30000 : 120000);
+}
+async function loadToken() {
+  const t = pref.json('tok');
+  token = null;
+  if (!t || !key) return;
+  try { token = td.decode(await crypto.subtle.decrypt({name: 'AES-GCM', iv: b64d(t.iv)}, key, b64d(t.ct))); }
+  catch { pref.del('tok'); }
+}
+async function saveToken(t) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name: 'AES-GCM', iv}, key, te.encode(t));
+  pref.set('tok', JSON.stringify({iv: b64e(iv), ct: b64e(ct)}));
+  token = t;
+}
+
+/* ---------- ui state ---------- */
+const ui = {
+  view: ['today', 'board', 'week'].includes(params.get('view')) ? params.get('view') : (pref.get('view') || 'today'),
+  week: mondayOf(todayStr()), q: '', project: '', priority: '', review: false, showAllDone: false,
+};
+function setSync(s, msg) {
+  const chip = $('#saveChip');
+  if (!chip) return;
+  let st = s, txt;
+  if (!st) {
+    if (mode === 'demo') st = 'demo';
+    else if (saving) st = 'pending';
+    else if (pending.length && !token) st = 'error';
+    else if (pending.length) st = 'pending';
+    else if (!token) st = 'readonly';
+    else st = 'saved';
+  }
+  txt = {
+    demo: 'Demo data, not saved',
+    pending: saving ? 'Saving…' : `${pending.length} change${pending.length === 1 ? '' : 's'} waiting`,
+    error: pending.length && !token ? 'Not saved: add a token in Settings' : 'Sync problem',
+    readonly: `Read-only${lastSync ? ' · synced ' + lastSync.toTimeString().slice(0, 5) : ''}`,
+    saved: `Synced ${lastSync ? lastSync.toTimeString().slice(0, 5) : ''}`,
+  }[st];
+  chip.dataset.s = st === 'readonly' || st === 'demo' ? 'idle' : st;
+  chip.lastElementChild.textContent = txt;
+  chip.title = msg || 'Checks GitHub every ' + (token ? '30 seconds' : '2 minutes') + ' for changes from Claude';
+}
+function showBanner(id, html, warn, actionLabel) {
+  const box = $('#banners');
+  let b = box.querySelector(`[data-banner="${id}"]`);
+  if (!b) { b = document.createElement('div'); b.dataset.banner = id; box.appendChild(b); }
+  b.className = 'banner' + (warn ? ' warn' : '');
+  b.innerHTML = `<span>${html}</span>` + (actionLabel ? ` <button class="btn small" data-act="banner-${id}">${esc(actionLabel)}</button>` : '');
+}
+function clearBanner(id) { const b = $(`#banners [data-banner="${id}"]`); if (b) b.remove(); }
+let toastTimer = null;
+function toast(msg, err) {
+  let t = $('.toast');
+  if (!t) { t = document.createElement('div'); t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.className = 'toast' + (err ? ' err' : '');
+  t.textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.remove(), err ? 7000 : 2600);
+}
+
+/* ---------- rendering ---------- */
+const anyDialogOpen = () => !!document.querySelector('dialog[open]');
+function safeRender() { if (anyDialogOpen()) renderLater = true; else render(); }
+function render() {
+  renderLater = false;
+  const ae = document.activeElement;
+  const focusId = ae && ae.id && $('#view').contains(ae) ? ae.id : null;
+  let sel = null;
+  try { if (focusId && typeof ae.selectionStart === 'number') sel = [ae.selectionStart, ae.selectionEnd]; } catch { /* not a text input */ }
+  renderTop();
+  $('#view').innerHTML = ui.view === 'board' ? viewBoard() : ui.view === 'week' ? viewWeek() : viewToday();
+  if (focusId) {
+    const el = document.getElementById(focusId);
+    if (el) { el.focus(); if (sel) try { el.setSelectionRange(sel[0], sel[1]); } catch { /* ignore */ } }
+  }
+}
+function renderTop() {
+  const t = todayStr();
+  $('#todayLabel').textContent = `${fmtLong(t)} · W${isoWeek(t)}`;
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === ui.view)));
+  const th = pref.get('theme') || 'auto';
+  $('#btnTheme').textContent = 'Theme: ' + th[0].toUpperCase() + th.slice(1);
+}
+function prioChip(p) { return `<span class="prio ${p}">${PRIO_EN[p]}</span>`; }
+function metaChips(it, opts = {}) {
+  const t = todayStr(), out = [];
+  if (it.project) out.push(`<span class="tag" title="${esc(it.project)}">${esc(it.project)}</span>`);
+  out.push(prioChip(it.priority));
+  if (it.status === 'done' && it.done_on) out.push(`<span>done ${fmtShort(it.done_on)}</span>`);
+  else if (it.due) out.push(it.due < t && it.status !== 'postponed' ? `<span class="badge overdue">due ${fmtShort(it.due)}</span>` : `<span>due ${fmtShort(it.due)}</span>`);
+  if (opts.today !== false && it.today === t) out.push('<span class="badge today">Today</span>');
+  if (it.source === 'claude') out.push('<span class="muted" title="Created by a Claude session">by Claude</span>');
+  if (!it.reviewed) out.push('<span class="badge review" title="Imported from an old week. Open it and check the status.">Review</span>');
+  return out.join('');
+}
+function meter(p, big) { return `<div class="meter${big ? ' big' : ''}" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}" aria-label="Progress ${p}%"><i style="width:${p}%"></i></div>`; }
+const sortOpen = (a, b) => PRIO_RANK[a.priority] - PRIO_RANK[b.priority]
+  || (a.due || '9999').localeCompare(b.due || '9999')
+  || (b.updated || '').localeCompare(a.updated || '');
+function matches(it) {
+  const q = norm(ui.q);
+  if (q && !norm(`${it.title} ${it.detail} ${it.project} ${it.notes}`).includes(q)) return false;
+  if (ui.project && it.project !== ui.project) return false;
+  if (ui.priority && it.priority !== ui.priority) return false;
+  if (ui.review && it.reviewed) return false;
+  return true;
+}
+function logRows(entries) {
+  return entries.map(e => `<div class="logrow"><time>${esc(e.t || '')}</time><div>${e.project ? `<span class="tag">${esc(e.project)}</span> ` : ''}${esc(e.text)}${e.src ? ` <span class="src">· ${esc(e.src)}</span>` : ''}</div></div>`).join('');
+}
+
+/* Today */
+function viewToday() {
+  const t = todayStr();
+  const open = it => it.status === 'todo' || it.status === 'doing';
+  const picked = state.items.filter(i => i.today === t)
+    .sort((a, b) => (a.status === 'done') - (b.status === 'done') || sortOpen(a, b));
+  const carry = state.items.filter(i => i.today && i.today < t && open(i)).sort(sortOpen);
+  const carryIds = new Set(carry.map(i => i.id));
+  const pool = state.items.filter(i => i.today !== t && !carryIds.has(i.id) && matches(i));
+  const doing = pool.filter(i => i.status === 'doing').sort(sortOpen);
+  const todo = pool.filter(i => i.status === 'todo').sort(sortOpen);
+  const nDone = picked.filter(i => i.status === 'done').length;
+  const lastDay = carry.reduce((m, i) => (i.today > m ? i.today : m), '');
+  const todayLog = state.log.filter(e => e.d === t).sort((a, b) => (b.t || '').localeCompare(a.t || ''));
+
+  const pickedHtml = picked.length ? picked.map(it => `
+    <div class="prow ${it.status === 'done' ? 'done' : ''}">
+      <div>
+        <div class="t" data-act="edit" data-id="${it.id}">${esc(it.title)}</div>
+        <div class="meta">${metaChips(it, {today: false})}</div>
+      </div>
+      <div class="ctl">
+        <div class="seg" role="group" aria-label="Status">
+          ${['todo', 'doing', 'done'].map(s => `<button data-act="status" data-id="${it.id}" data-s="${s}" aria-pressed="${it.status === s}">${STATUS_EN[s]}</button>`).join('')}
+        </div>
+        <button class="btn ghost small" data-act="unpick" data-id="${it.id}" title="Remove from today" aria-label="Remove from today">✕</button>
+      </div>
+      ${it.status !== 'done' ? `<label class="prog"><span>Progress</span><input type="range" class="prog-in" data-id="${it.id}" min="0" max="100" step="5" value="${it.progress}" aria-label="Progress"><output>${it.progress}%</output></label>` : ''}
+    </div>`).join('')
+    : `<div class="empty">Nothing picked yet. Choose 2-5 tasks from the list on the right${carry.length ? ', or carry over the unfinished ones' : ''}.</div>`;
+
+  const cand = it => `
+    <div class="cand">
+      <button class="btn small" data-act="pick" data-id="${it.id}" aria-label="Add to today">+ Today</button>
+      <div class="t" data-act="edit" data-id="${it.id}">${esc(it.title)}</div>
+      <div class="meta">${metaChips(it, {today: false})}${it.status === 'doing' ? `<span>${it.progress}%</span>` : ''}</div>
+    </div>`;
+  const section = (title, items, extra = '', limit = 0) => {
+    if (!items.length) return '';
+    const shown = limit ? items.slice(0, limit) : items;
+    const more = items.length - shown.length;
+    return `<div class="pick-sec"><h4><span>${title} <span class="count">(${items.length})</span></span>${extra}</h4>
+      ${shown.map(cand).join('')}${more > 0 ? `<div class="empty">${more} more. Use search to find them.</div>` : ''}</div>`;
+  };
+  const right = section(`Unfinished from ${lastDay ? fmtShort(lastDay) : 'before'}`, carry, '<button class="btn small" data-act="carry-all">Carry all over</button>')
+    + section('In progress', doing)
+    + section('To do', todo, '', ui.q ? 0 : 25);
+
+  return `
+    <h2 class="vh">Today</h2>
+    <p class="sub">${picked.length} picked · ${nDone} done · ${todayLog.length} log ${todayLog.length === 1 ? 'line' : 'lines'}</p>
+    <div class="today-grid">
+      <div>
+        <section class="panel"><h3>Today's work <span class="count">${picked.length}</span></h3><div class="picked">${pickedHtml}</div></section>
+        <section class="panel"><h3>Work log today <span class="count">${todayLog.length}</span></h3>
+          <div class="logs">${todayLog.length ? logRows(todayLog) : '<div class="empty">Claude sessions add a line here when they finish something. You can add your own too.</div>'}</div>
+          <div class="logadd"><input type="text" id="logText" placeholder="What did you just finish?" aria-label="New log line"><button class="btn" data-act="add-log">Add</button></div>
+        </section>
+      </div>
+      <section class="panel">
+        <h3>Pick your work</h3>
+        <div class="toolbar"><input type="search" id="q" placeholder="Search tasks" value="${esc(ui.q)}" aria-label="Search tasks"></div>
+        ${right || '<div class="empty">No open tasks match.</div>'}
+      </section>
+    </div>`;
+}
+
+/* Board */
+function viewBoard() {
+  const t = todayStr(), cut = addDays(t, -DONE_DAYS);
+  const projects = [...new Set(state.items.map(i => i.project).filter(Boolean))].sort();
+  const nReview = state.items.filter(i => !i.reviewed).length;
+  const items = state.items.filter(matches);
+  const col = s => {
+    let list = items.filter(i => i.status === s);
+    let hidden = 0;
+    if (s === 'done') {
+      list.sort((a, b) => (b.done_on || '').localeCompare(a.done_on || ''));
+      if (!ui.showAllDone) { const keep = list.filter(i => (i.done_on || '') >= cut); hidden = list.length - keep.length; list = keep; }
+    } else if (s === 'postponed') list.sort((a, b) => (b.updated || '').localeCompare(a.updated || ''));
+    else list.sort(sortOpen);
+    const cards = list.map(it => `
+      <article class="card ${it.status}" draggable="true" data-act="edit" data-id="${it.id}" tabindex="0" aria-label="${esc(it.title)}">
+        <div class="t">${esc(it.title)}</div>
+        <div class="meta">${metaChips(it)}</div>
+        ${it.status === 'doing' ? meter(it.progress) : ''}
+      </article>`).join('');
+    return `<section class="col" data-s="${s}" aria-label="${STATUS_EN[s]}">
+      <header><span class="st ${s}">${STATUS_EN[s]}</span><span class="count">${list.length}</span></header>
+      ${cards || '<div class="empty">Drop a card here</div>'}
+      ${hidden ? `<div class="more">${hidden} older done ${hidden === 1 ? 'task' : 'tasks'} hidden</div>` : ''}
+    </section>`;
+  };
+  return `
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="Search tasks" value="${esc(ui.q)}" aria-label="Search tasks">
+      <select id="fProject" aria-label="Project"><option value="">All projects</option>${projects.map(p => `<option ${p === ui.project ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select>
+      <select id="fPrio" aria-label="Priority"><option value="">All priorities</option>${PRIO.map(p => `<option value="${p}" ${p === ui.priority ? 'selected' : ''}>${PRIO_EN[p]}</option>`).join('')}</select>
+      ${nReview ? `<button class="btn ${ui.review ? 'on' : ''}" data-act="toggle-review" aria-pressed="${ui.review}">Needs review (${nReview})</button>` : ''}
+      <button class="btn ${ui.showAllDone ? 'on' : ''}" data-act="toggle-done" aria-pressed="${ui.showAllDone}">${ui.showAllDone ? 'Showing all done' : `Done: last ${DONE_DAYS} days`}</button>
+      <span class="muted">Drag cards between columns, or click a card to edit.</span>
+    </div>
+    <div class="board">${STATUS.map(col).join('')}</div>`;
+}
+
+/* Week */
+function viewWeek() {
+  const wk = ui.week, thisWk = mondayOf(todayStr());
+  const rows = weekRows(state.items, wk);
+  const log = weekLog(state.log, wk);
+  const s = weekStats(rows);
+  const note = state.weekNotes[wk] || '';
+  const body = rows.map((r, i) => `
+    <tr>
+      <td class="num">${i + 1}</td>
+      <td><span class="t" data-act="edit" data-id="${r.it.id}">${esc(r.it.title)}</span>${r.it.project ? ` <span class="tag">${esc(r.it.project)}</span>` : ''}</td>
+      <td>${esc(r.it.detail)}</td>
+      <td class="nowrap">${r.it.start ? fmtShort(r.it.start) : ''}</td>
+      <td class="nowrap">${finishCell(r) ? fmtShort(finishCell(r)) : ''}</td>
+      <td class="nowrap"><span class="st ${r.status}">${STATUS_EN[r.status]}</span></td>
+      <td class="num">${r.progress}%</td>
+      <td class="nowrap">${prioChip(r.it.priority)}</td>
+      <td>${esc(r.it.notes)}</td>
+    </tr>`).join('');
+  const days = [...new Set(log.map(e => e.d))];
+  const logHtml = days.map(d => `<div class="daylog"><h4>${DAYS[parseYmd(d).getDay()]}, ${fmtShort(d)}</h4><div class="logs">${logRows(log.filter(e => e.d === d))}</div></div>`).join('');
+  return `
+    <div class="weeknav">
+      <button class="btn" data-act="week-prev" aria-label="Previous week">‹</button>
+      <span class="wk">W${isoWeek(wk)} · ${fmtShort(wk)} – ${fmtShort(addDays(wk, 4))} ${parseYmd(addDays(wk, 4)).getFullYear()}</span>
+      <button class="btn" data-act="week-next" aria-label="Next week">›</button>
+      ${wk !== thisWk ? '<button class="btn" data-act="week-this">This week</button>' : ''}
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="v">${s.n}</div><div class="l">Tasks this week</div></div>
+      <div class="stat"><div class="v">${s.done}</div><div class="l">Done</div></div>
+      <div class="stat"><div class="v">${s.doing}</div><div class="l">In progress</div></div>
+      <div class="stat"><div class="v">${log.length}</div><div class="l">Log lines</div></div>
+      <div class="stat wide"><div class="v">${s.pct}%</div><div class="l">Completion (done ÷ tasks)</div>${meter(s.pct, true)}</div>
+    </div>
+    ${rows.length ? `<div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Task</th><th>Detail</th><th>Started</th><th>Due / finished</th><th>Status</th><th>Progress</th><th>Priority</th><th>Notes</th></tr></thead>
+      <tbody>${body}</tbody></table></div>`
+    : '<div class="empty">No tasks in this week. A task shows up in a week when it is created, picked for Today, or its status or progress changes that week.</div>'}
+    <div class="week-bottom">
+      <div>
+        <label for="weekNote">Шуурхай санал (week note)</label>
+        <textarea id="weekNote" rows="6" placeholder="Problems, proposals, blockers for this week">${esc(note)}</textarea>
+        <label class="loglabel">Work log</label>
+        ${logHtml || '<div class="empty">No log lines this week.</div>'}
+      </div>
+      <div>
+        <label>Weekly report (Mongolian)</label>
+        <div class="copyrow">
+          <button class="btn primary" data-act="copy-tsv" ${rows.length ? '' : 'disabled'}>Copy rows for Excel</button>
+          <button class="btn" data-act="copy-tsv-head" ${rows.length ? '' : 'disabled'}>Rows + header</button>
+          <button class="btn" data-act="copy-text" ${rows.length || log.length ? '' : 'disabled'}>Copy as text</button>
+        </div>
+        <pre class="report" id="reportPreview">${esc(reportText(rows, wk, note, log))}</pre>
+      </div>
+    </div>`;
+}
+
+/* ---------- actions (each change is an op keyed by id, see mutate) ---------- */
+const setStatus = (id, st) => mutate(s => {
+  const it = byId(s, id);
+  if (!it || it.status === st) return;
+  it.status = st;
+  if (st === 'done') it.progress = 100;
+  touch(it);
+});
+const pick = id => mutate(s => { const it = byId(s, id); if (it) { it.today = todayStr(); touch(it); } });
+const unpick = id => mutate(s => { const it = byId(s, id); if (it) { it.today = null; it.updated = nowIso(); } });
+function addLog(text) {
+  const e = {id: uid(), d: todayStr(), t: hhmm(), text: text.trim(), project: '', task: null, src: 'web'};
+  if (!e.text) return;
+  mutate(s => { if (!s.log.some(x => x.id === e.id)) s.log.push({...e}); });
+}
+async function copy(text, msg) {
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } finally { ta.remove(); }
+  }
+  toast(msg);
+}
+function exportJson() {
+  if (!confirm('This downloads an UNENCRYPTED copy of all your tasks. Continue?')) return;
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `tracker-export-${todayStr()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function applyTheme() {
+  const th = params.get('theme') || pref.get('theme') || 'auto';
+  if (th === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', th);
+}
+
+/* edit dialog */
+let editing = null;
+function openEdit(id) {
+  const isNew = !id;
+  const it = isNew ? fixItem({}) : byId(state, id);
+  if (!it) return;
+  editing = {id: it.id, isNew};
+  const E = $('#editForm').elements;
+  $('#dlgTitle').textContent = isNew ? 'New task' : 'Edit task';
+  E.status.innerHTML = STATUS.map(s => `<option value="${s}">${STATUS_EN[s]}</option>`).join('');
+  E.priority.innerHTML = PRIO.map(p => `<option value="${p}">${PRIO_EN[p]}</option>`).join('');
+  E.title.value = it.title; E.detail.value = it.detail; E.status.value = it.status; E.priority.value = it.priority;
+  E.project.value = it.project; E.progress.value = it.progress; $('#progOut').textContent = it.progress + '%';
+  E.start.value = it.start || ''; E.due.value = it.due || ''; E.notes.value = it.notes;
+  E.today.checked = it.today === todayStr(); E.reviewed.checked = it.reviewed;
+  $('#reviewedWrap').hidden = isNew || it.reviewed;
+  $('#btnDelete').hidden = isNew;
+  $('#projects').innerHTML = [...new Set(state.items.map(i => i.project).filter(Boolean))].sort().map(p => `<option value="${esc(p)}">`).join('');
+  const src = it.source_keys.length ? `From ${it.source_keys.join(', ')}` : (it.source === 'claude' ? 'Created by a Claude session' : '');
+  const hist = it.log.length ? `History: ${it.log.slice(-6).map(e => `${fmtShort(e.d)} ${STATUS_EN[e.s]} ${e.p}%`).join(' → ')}` : '';
+  $('#dlgSrc').textContent = [src, hist].filter(Boolean).join(' · ');
+  $('#editDlg').returnValue = '';
+  $('#editDlg').showModal();
+  E.title.focus();
+}
+function saveEdit() {
+  const {id, isNew} = editing;
+  const E = $('#editForm').elements;
+  const f = {
+    title: E.title.value.trim(), detail: E.detail.value.trim(), status: E.status.value, priority: E.priority.value,
+    project: E.project.value.trim(), progress: clampPct(E.progress.value), start: E.start.value || null,
+    due: E.due.value || null, notes: E.notes.value.trim(),
+  };
+  if (f.status === 'done') f.progress = 100;
+  const onToday = E.today.checked, tick = E.reviewed.checked, t = todayStr();
+  mutate(s => {
+    let it = byId(s, id);
+    if (!it) { if (!isNew) return; it = fixItem({id}); s.items.push(it); }
+    const before = {s: it.status, p: it.progress};
+    Object.assign(it, f);
+    if (onToday) it.today = t; else if (it.today === t) it.today = null;
+    it.reviewed = isNew || it.reviewed || tick;
+    if (isNew || before.s !== it.status || before.p !== it.progress || it.today === t) touch(it);
+    else it.updated = nowIso();
+  });
+}
+
+/* import dialog */
+let importPlan = null;
+async function startImport() {
+  const txt = await pickFileText();
+  if (txt == null) return;
+  let data;
+  try { data = JSON.parse(txt); } catch (e) { return toast('inbox.json is not valid JSON: ' + e.message, true); }
+  const list = Array.isArray(data) ? data : data && data.items;
+  if (!Array.isArray(list)) return toast('inbox.json needs an "items" list.', true);
+  importPlan = planImport(list, state.items);
+  const c = a => importPlan.filter(r => r.action === a).length;
+  $('#impInfo').textContent = `${list.length} rows${data.generated ? ` · generated ${data.generated}` : ''}${data.source ? ` · from ${data.source}` : ''} · ${c('new')} new, ${c('update')} update, ${c('skip')} already imported${c('invalid') ? `, ${c('invalid')} invalid` : ''}`;
+  $('#impBody').innerHTML = importPlan.map((r, n) => {
+    const x = r.x || {}, can = r.action === 'new' || r.action === 'update';
+    return `<tr>
+      <td><input type="checkbox" data-n="${n}" ${can ? 'checked' : 'disabled'} aria-label="Import row"></td>
+      <td><span class="act ${r.action}">${r.action}</span></td>
+      <td class="nowrap">${esc(x.week)}</td>
+      <td>${esc(x.title)}${r.problems.length ? `<div class="problems">${r.problems.map(esc).join('; ')}</div>` : ''}</td>
+      <td class="nowrap">${STATUS.includes(x.status) ? `<span class="st ${x.status}">${STATUS_EN[x.status]}</span>` : esc(x.status)}</td>
+      <td class="num">${esc(x.progress)}${typeof x.progress === 'number' ? '%' : ''}</td>
+      <td class="nowrap muted">${esc(x.source_key)}</td></tr>`;
+  }).join('');
+  $('#impApply').disabled = !importPlan.some(r => r.action === 'new' || r.action === 'update');
+  $('#impDlg').returnValue = '';
+  $('#impDlg').showModal();
+}
+function pickFileText() {
+  return new Promise(res => {
+    const inp = $('#fileIn');
+    inp.value = '';
+    inp.onchange = async () => res(inp.files[0] ? await inp.files[0].text() : null);
+    inp.click();
+  });
+}
+
+/* settings dialog */
+function openSettings() {
+  const f = $('#setForm');
+  f.elements.token.value = '';
+  $('#tokStatus').textContent = token ? 'A token is saved on this device. Paste a new one to replace it.' : 'No token on this device: the page is read-only.';
+  $('#setDlg').returnValue = '';
+  $('#setDlg').showModal();
+}
+async function saveSettings() {
+  const t = $('#setForm').elements.token.value.trim();
+  if (!t) return;
+  try {
+    const r = await fetch(API, {headers: {Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + t}, cache: 'no-store'});
+    if (!r.ok) throw new Error(r.status === 401 ? 'GitHub refused this token.' : `GitHub answered ${r.status}.`);
+    await saveToken(t);
+    toast('Token saved. Changes from this page are now saved to GitHub.');
+    setSync(); schedulePoll(); flush();
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ---------- events ---------- */
+function bindEvents() {
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-act]');
+    if (!el) return;
+    const act = el.dataset.act, id = el.dataset.id;
+    switch (act) {
+      case 'tab': ui.view = el.dataset.view; pref.set('view', ui.view); render(); break;
+      case 'new': openEdit(null); break;
+      case 'edit': openEdit(id); break;
+      case 'pick': pick(id); break;
+      case 'unpick': unpick(id); break;
+      case 'carry-all': {
+        const t = todayStr();
+        const ids = state.items.filter(i => i.today && i.today < t && (i.status === 'todo' || i.status === 'doing')).map(i => i.id);
+        mutate(s => ids.forEach(x => { const it = byId(s, x); if (it) { it.today = t; touch(it); } }));
+        break;
+      }
+      case 'status': setStatus(id, el.dataset.s); break;
+      case 'add-log': { const inp = $('#logText'); if (inp && inp.value.trim()) { addLog(inp.value); } break; }
+      case 'week-prev': ui.week = addDays(ui.week, -7); render(); break;
+      case 'week-next': ui.week = addDays(ui.week, 7); render(); break;
+      case 'week-this': ui.week = mondayOf(todayStr()); render(); break;
+      case 'copy-tsv': case 'copy-tsv-head': {
+        const rows = weekRows(state.items, ui.week);
+        copy(reportTSV(rows, act === 'copy-tsv-head'), `Copied ${rows.length} rows. Paste into the template's first task row (the # column).`); break;
+      }
+      case 'copy-text': copy(reportText(weekRows(state.items, ui.week), ui.week, state.weekNotes[ui.week], weekLog(state.log, ui.week)), 'Copied the report text.'); break;
+      case 'toggle-done': ui.showAllDone = !ui.showAllDone; render(); break;
+      case 'toggle-review': ui.review = !ui.review; render(); break;
+      case 'import': startImport(); break;
+      case 'export': exportJson(); break;
+      case 'settings': openSettings(); break;
+      case 'theme': {
+        const order = ['auto', 'light', 'dark'];
+        const next = order[(order.indexOf(pref.get('theme') || 'auto') + 1) % 3];
+        pref.set('theme', next); applyTheme(); renderTop(); break;
+      }
+      case 'banner-sync': clearBanner('sync'); flush(); break;
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.matches('.card')) { openEdit(e.target.dataset.id); return; }
+    if (e.key === 'Enter' && e.target.id === 'logText') { e.preventDefault(); if (e.target.value.trim()) addLog(e.target.value); return; }
+    if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input,textarea,select,dialog') || $('#app').hidden) return;
+    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); openEdit(null); }
+    else if (e.key === '1' || e.key === '2' || e.key === '3') { ui.view = ['today', 'board', 'week'][+e.key - 1]; pref.set('view', ui.view); render(); }
+    else if (e.key === '/') { const q = $('#q'); if (q) { e.preventDefault(); q.focus(); } }
+  });
+  const view = $('#view');
+  view.addEventListener('input', e => {
+    const el = e.target;
+    if (el.id === 'q') { ui.q = el.value; render(); }
+    else if (el.classList.contains('prog-in')) el.nextElementSibling.textContent = el.value + '%';
+    else if (el.id === 'weekNote') {
+      const wk = ui.week, v = el.value;
+      mutate(s => { if (v.trim()) s.weekNotes[wk] = v; else delete s.weekNotes[wk]; }, {quiet: true});
+      $('#reportPreview').textContent = reportText(weekRows(state.items, wk), wk, v, weekLog(state.log, wk));
+    }
+  });
+  view.addEventListener('change', e => {
+    const el = e.target;
+    if (el.id === 'fProject') { ui.project = el.value; render(); }
+    else if (el.id === 'fPrio') { ui.priority = el.value; render(); }
+    else if (el.classList.contains('prog-in')) {
+      const id = el.dataset.id, p = clampPct(el.value);
+      mutate(s => {
+        const it = byId(s, id); if (!it) return;
+        it.progress = p;
+        if (it.status === 'todo' && p > 0) it.status = 'doing';
+        touch(it);
+      });
+    }
+  });
+  view.addEventListener('dragstart', e => {
+    const c = e.target.closest('.card'); if (!c) return;
+    e.dataTransfer.setData('text/plain', c.dataset.id); e.dataTransfer.effectAllowed = 'move';
+    c.classList.add('dragging');
+  });
+  view.addEventListener('dragend', e => { const c = e.target.closest('.card'); if (c) c.classList.remove('dragging'); });
+  view.addEventListener('dragover', e => {
+    const col = e.target.closest('.col'); if (!col) return;
+    e.preventDefault();
+    view.querySelectorAll('.col.drop').forEach(c => c !== col && c.classList.remove('drop'));
+    col.classList.add('drop');
+  });
+  view.addEventListener('dragleave', e => { const col = e.target.closest('.col'); if (col && !col.contains(e.relatedTarget)) col.classList.remove('drop'); });
+  view.addEventListener('drop', e => {
+    const col = e.target.closest('.col'); if (!col) return;
+    e.preventDefault(); col.classList.remove('drop');
+    setStatus(e.dataTransfer.getData('text/plain'), col.dataset.s);
+  });
+  const f = $('#editForm');
+  f.elements.progress.addEventListener('input', () => { $('#progOut').textContent = f.elements.progress.value + '%'; });
+  f.elements.status.addEventListener('change', () => {
+    if (f.elements.status.value === 'done') { f.elements.progress.value = 100; $('#progOut').textContent = '100%'; }
+  });
+  $('#editDlg').addEventListener('close', () => {
+    if ($('#editDlg').returnValue === 'save' && editing) saveEdit();
+    editing = null;
+    if (renderLater) render();
+  });
+  $('#btnDelete').addEventListener('click', () => {
+    if (!editing) return;
+    const it = byId(state, editing.id);
+    if (!it || !confirm(`Delete "${it.title}"? Older versions stay in the repository history.`)) return;
+    const id = editing.id;
+    editing = null; $('#editDlg').close();
+    mutate(s => { s.items = s.items.filter(i => i.id !== id); });
+  });
+  $('#impDlg').addEventListener('close', () => {
+    if ($('#impDlg').returnValue === 'apply' && importPlan) {
+      const chosen = [...document.querySelectorAll('#impBody input:checked')].map(c => importPlan[+c.dataset.n]);
+      let counts = null;
+      mutate(s => { const c = applyImport(chosen, s.items); if (!counts) counts = c; });
+      toast(`Imported: ${counts.new} new, ${counts.update} updated${counts.skip ? `, ${counts.skip} skipped` : ''}.`);
+    }
+    importPlan = null;
+    if (renderLater) render();
+  });
+  $('#setDlg').addEventListener('close', () => { if ($('#setDlg').returnValue === 'save') saveSettings(); if (renderLater) render(); });
+  $('#btnLock').addEventListener('click', () => { pref.del('key'); location.reload(); });
+  $('#btnForget').addEventListener('click', () => {
+    if (!confirm('Remove the saved key and GitHub token from this browser?')) return;
+    pref.del('key'); pref.del('tok'); location.reload();
+  });
+  $('#lockForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = $('#btnUnlock');
+    btn.disabled = true; $('#lockErr').textContent = ''; btn.textContent = 'Unlocking…';
+    try { await unlock($('#pw').value, $('#remember').checked); }
+    catch (err) { $('#lockErr').textContent = err.message; }
+    finally { btn.disabled = false; btn.textContent = 'Unlock'; }
+  });
+  window.addEventListener('beforeunload', e => { if (pending.length || saving) { e.preventDefault(); e.returnValue = ''; } });
+  let lastDay = todayStr();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || $('#app').hidden) return;
+    if (todayStr() !== lastDay) { lastDay = todayStr(); ui.week = mondayOf(lastDay); safeRender(); }
+    poll();
+  });
+}
+
+/* ---------- boot ---------- */
+function showLock(msg, opts = {}) {
+  $('#app').hidden = true; $('#lock').hidden = false;
+  $('#lockMsg').textContent = msg || 'The data is encrypted. Enter your tracker password.';
+  $('#lockForm').hidden = !!opts.noForm;
+  if (!opts.noForm) setTimeout(() => $('#pw').focus(), 0);
+}
+function startApp() {
+  $('#lock').hidden = true; $('#app').hidden = false;
+  if (mode === 'demo') showBanner('demo', 'Demo data. Nothing you do here is saved. Open the page without <code>?demo</code> to use your real data.');
+  else if (!token) showBanner('token', 'Read-only on this device. Add a GitHub token in <b>Settings</b> to save changes from this page.', false);
+  lastSync = new Date();
+  setSync(); render();
+  if (mode === 'live') schedulePoll();
+}
+async function unlock(password, remember) {
+  if (!remote) remote = await ghGet(true);
+  if (!remote) throw new Error('No tracker data on GitHub yet. Run `wt init` on your PC first.');
+  const k = await deriveKey(password, b64d(remote.blob.salt), remote.blob.iter);
+  let data;
+  try { data = await decryptJson(remote.blob, k); } catch { throw new Error('Wrong password.'); }
+  key = k; state = normalizeState(data);
+  if (remember) pref.set('key', JSON.stringify({salt: remote.blob.salt, k: b64e(await crypto.subtle.exportKey('raw', k))}));
+  await loadToken();
+  startApp();
+}
+async function boot() {
+  applyTheme();
+  bindEvents();
+  if (params.has('selftest')) return selfTest();
+  if (params.has('demo')) { mode = 'demo'; state = normalizeState(demoData()); return startApp(); }
+  if (!window.crypto || !crypto.subtle) return showLock('This browser cannot decrypt here (it needs HTTPS). Open the GitHub Pages address.', {noForm: true});
+  showLock('Loading…', {noForm: true});
+  try { remote = await ghGet(true); }
+  catch (e) { return showLock(`Could not reach GitHub: ${e.message}`, {noForm: true}); }
+  if (!remote) return showLock('No tracker data on GitHub yet. Run `wt init` on your PC first.', {noForm: true});
+  const saved = pref.json('key');
+  if (saved && saved.salt === remote.blob.salt) {
+    try {
+      key = await importRawKey(saved.k);
+      state = normalizeState(await decryptJson(remote.blob, key));
+      await loadToken();
+      return startApp();
+    } catch { key = null; pref.del('key'); }
+  }
+  showLock('');
+}
+
+/* ---------- demo data (?demo), generic on purpose: this file is public ---------- */
+function demoData() {
+  const t = todayStr(), wk = mondayOf(t), lw = addDays(wk, -7), y = addDays(t, -1);
+  const mk = (o, log) => fixItem(Object.assign(o, {log: log.map(([d, s, p]) => ({d, s, p}))}));
+  return {
+    items: [
+      mk({title: 'Sales dashboard: add region filter', project: 'Sales dashboard', status: 'doing', progress: 60, priority: 'high', start: addDays(lw, 2), today: t, detail: 'Slicer + measure check, then publish.'}, [[addDays(lw, 2), 'doing', 20], [t, 'doing', 60]]),
+      mk({title: 'Warehouse restore test on the new server', project: 'Data warehouse', status: 'doing', progress: 40, priority: 'medium', start: addDays(lw, 1), today: y, source: 'claude'}, [[addDays(lw, 1), 'doing', 10], [y, 'doing', 40]]),
+      mk({title: 'Stock report: add 7 store pins', project: 'Stock report', status: 'todo', priority: 'high', due: addDays(wk, 4)}, [[wk, 'todo', 0]]),
+      mk({title: 'Exam practice block 4', project: 'Certification', status: 'todo', priority: 'medium', due: addDays(wk, 5)}, [[lw, 'todo', 0]]),
+      mk({title: 'Publish the history check report', project: 'Sales report', status: 'done', progress: 100, priority: 'medium', start: lw, done_on: addDays(wk, 1)}, [[lw, 'doing', 50], [addDays(wk, 1), 'done', 100]]),
+      mk({title: 'Fix duplicate rows between two reports', project: 'Sales report', status: 'done', progress: 100, priority: 'high', start: addDays(lw, 1), done_on: addDays(lw, 3)}, [[addDays(lw, 1), 'doing', 30], [addDays(lw, 3), 'done', 100]]),
+      mk({title: 'Talk to sales reps about overdue alerts', project: 'Ideas', status: 'postponed', priority: 'low'}, [[lw, 'postponed', 0]]),
+      mk({title: 'Agree data access with the vendor', status: 'doing', progress: 30, priority: 'high', week: '2026-09-14', source: 'xlsx', source_keys: ['xlsx:0914:3'], reviewed: false}, [['2026-09-14', 'doing', 30]]),
+    ],
+    weekNotes: {[wk]: 'Example note: a data source for one channel is still missing.'},
+    log: [
+      {id: 'l1', d: t, t: '09:40', text: 'Region filter measure fixed, totals match', project: 'Sales dashboard', src: 'laptop'},
+      {id: 'l2', d: t, t: '11:15', text: 'Backup read-back check passed', project: 'Data warehouse', src: 'server'},
+      {id: 'l3', d: y, t: '16:05', text: 'Restore drill: 2 of 3 steps done', project: 'Data warehouse', src: 'server'},
+    ],
+  };
+}
+
+/* ---------- self test (?selftest); a local test harness may set window.__WT_TEST__ ---------- */
+async function selfTest() {
+  const results = [];
+  const ok = (name, cond, info) => results.push({name, pass: !!cond, info});
+  ok('mondayOf Thu', mondayOf('2026-11-19') === '2026-11-16');
+  ok('mondayOf Sun', mondayOf('2026-11-22') === '2026-11-16');
+  ok('isoWeek W47', isoWeek('2026-11-19') === 47);
+  ok('isoWeek Dec 31 = W53', isoWeek('2026-12-31') === 53);
+  ok('isYmd rejects 2026-02-30', !isYmd('2026-02-30'));
+  ok('tsvCell quotes newline', tsvCell('a\nb"c') === '"a\nb""c"');
+  const base = r => Object.assign({source_key: 'k', week: '2026-08-31', title: 'T', detail: '', status: 'todo', progress: 0, priority: null, start: null, due: null, notes: ''}, r);
+  ok('validate ok row', validateInbox(base({})).length === 0);
+  ok('validate non-Monday', validateInbox(base({week: '2026-09-02'})).some(p => p.includes('Monday')));
+  ok('validate progress string', validateInbox(base({progress: '`10%'})).some(p => p.includes('progress')));
+  const items = [];
+  const inbox = [
+    base({source_key: 'xlsx:b:3', week: '2026-09-14', title: 'Vendor talk ', status: 'doing', progress: 30, priority: 'high'}),
+    base({source_key: 'xlsx:a:3', week: '2026-08-31', title: 'Vendor  talk', status: 'doing', progress: 20, priority: 'high'}),
+    base({source_key: 'xlsx:a:1', week: '2026-08-31', title: 'Expense report', status: 'done', progress: 100}),
+    base({source_key: 'bad', week: '2026-09-02'}),
+  ];
+  const plan = planImport(inbox, items);
+  ok('plan actions', plan.map(r => r.action).sort().join(',') === 'invalid,new,new,update');
+  const counts = applyImport(plan.filter(r => r.action !== 'invalid'), items);
+  ok('apply counts', counts.new === 2 && counts.update === 1, JSON.stringify(counts));
+  const v = items.find(i => norm(i.title) === 'vendor talk');
+  ok('merged history', v && v.log.length === 2 && v.progress === 30);
+  const again = applyImport(planImport(inbox, items).filter(r => r.action !== 'invalid'), items);
+  ok('import twice = no duplicates', items.length === 2 && again.new === 0);
+  const rows = weekRows(items, '2026-08-31');
+  const tsv = reportTSV(rows, true).split('\r\n');
+  ok('tsv header + rows', tsv.length === 3 && tsv[1].split('\t')[5] === 'Дууссан', tsv[1]);
+  const log = [{d: '2026-09-01', t: '10:00', text: 'did a thing', project: 'P'}];
+  ok('report text with log', reportText(rows, '2026-08-31', '', log).includes('09.01 (Мягмар)'));
+  // ops re-applied on a fresh copy (what flush does after someone else saved first)
+  const local = normalizeState({items: [fixItem({id: 'a', title: 'A'})]});
+  const fresh = normalizeState({items: [fixItem({id: 'a', title: 'A'}), fixItem({id: 'b', title: 'B from Claude'})]});
+  const op = s => { const it = byId(s, 'a'); it.status = 'done'; touch(it); };
+  op(local); op(fresh);
+  ok('op replay keeps remote item', fresh.items.length === 2 && byId(fresh, 'a').status === 'done');
+  const T = window.__WT_TEST__;
+  if (T && T.crypto) {
+    try {
+      const k = await deriveKey(T.crypto.password, b64d(T.crypto.blob.salt), T.crypto.blob.iter);
+      const data = await decryptJson(T.crypto.blob, k);
+      ok('decrypts the Python file', data.items[0].title === T.crypto.expectTitle, data.items[0].title);
+      let wrong = false;
+      try { await decryptJson(T.crypto.blob, await deriveKey('wrong password!!', b64d(T.crypto.blob.salt), T.crypto.blob.iter)); } catch { wrong = true; }
+      ok('wrong password is refused', wrong);
+      results.push({name: 'browser blob for Python', pass: true, info: JSON.stringify(await encryptJson({items: [{title: 'from the browser ✓ Монгол'}]}, k, T.crypto.blob))});
+    } catch (e) { ok('crypto', false, e.message); }
+  }
+  if (T && T.live) {
+    try {
+      BRANCH = T.live.branch; token = T.live.token;
+      remote = await ghGet(true);
+      key = await deriveKey(T.live.password, b64d(remote.blob.salt), remote.blob.iter);
+      state = normalizeState(await decryptJson(remote.blob, key));
+      ok('live read', state.items.some(i => i.title === T.live.expectTitle), state.items.map(i => i.title).join('|'));
+      mutate(s => s.items.push(fixItem({id: 'browser-test', title: 'Added from the browser'})), {quiet: true});
+      addLog('Browser log line');
+      clearTimeout(flushTimer);
+      await flush();
+      ok('live write: nothing left pending', pending.length === 0, $('#banners').textContent);
+      const back = normalizeState(await decryptJson((await ghGet(true)).blob, key));
+      ok('live write: read back', byId(back, 'browser-test') && back.log.some(e => e.text === 'Browser log line'));
+    } catch (e) { ok('live', false, e.message); }
+  }
+  const failed = results.filter(r => !r.pass);
+  const text = `SELFTEST ${failed.length ? 'FAIL' : 'PASS'} ${results.length - failed.length}/${results.length}\n` +
+    results.map(r => `${r.pass ? 'ok  ' : 'FAIL'} ${r.name}${r.info !== undefined ? ' :: ' + r.info : ''}`).join('\n');
+  document.body.innerHTML = `<pre id="selftest">${esc(text)}</pre>`;
+  if (T && T.resultUrl) fetch(T.resultUrl, {method: 'POST', body: text}).catch(() => {});
+}
+
+boot();
+})();
+</script>
+</body>
+</html>

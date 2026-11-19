@@ -251,20 +251,52 @@ def update(op):
     raise WtError('gave up: the file kept changing during 6 tries')
 
 
+def merge_into(state: dict, incoming: dict) -> tuple[int, int]:
+    """Add what `incoming` has and `state` lacks. A task counts as present when its id or its title is
+    already there, so running the same merge twice adds nothing. Returns (tasks added, tasks skipped)."""
+    ids = {i['id'] for i in state['items']}
+    titles = {norm(i['title']) for i in state['items']}
+    added = 0
+    for it in incoming['items']:
+        if it.get('id') in ids or norm(it.get('title')) in titles:
+            continue
+        state['items'].append(it)
+        added += 1
+    log_ids = {e.get('id') for e in state['log']}
+    state['log'] += [e for e in incoming['log'] if e.get('id') not in log_ids]
+    for week, text in incoming['weekNotes'].items():
+        if text and not state['weekNotes'].get(week):
+            state['weekNotes'][week] = text
+    return added, len(incoming['items']) - added
+
+
 # ---------- commands ----------
 def cmd_init(a) -> str:
+    # read the file first, so a wrong path fails before any password prompt
+    try:
+        incoming = normalize(json.loads(Path(a.from_file).read_text(encoding='utf-8'))) if a.from_file else None
+    except (OSError, ValueError) as e:
+        raise WtError(f'cannot read {a.from_file}: {e}') from None
     blob, sha = fetch()
     if blob is not None:
-        pw = getpass.getpass('Tracker password: ')
-        decrypt(blob, pw)  # raises on a wrong password
-        save_password(pw)
-        return f'password saved in {PWFILE}; this PC can now update the tracker'
+        try:
+            decrypt(blob, read_password())  # this PC already has a working password: don't ask again
+            msg = 'this PC is already set up'
+        except WtError:
+            pw = getpass.getpass('Tracker password: ')
+            decrypt(blob, pw)  # raises on a wrong password
+            save_password(pw)
+            msg = f'password saved in {PWFILE}; this PC can now update the tracker'
+        if incoming is not None:
+            added, skipped = update(lambda s: merge_into(s, incoming))
+            msg += f'\nadded {added} tasks from {a.from_file} ({skipped} were already there)'
+        return msg
     pw = getpass.getpass(f'New tracker password (at least {MIN_PASSWORD} characters, e.g. 4 random words): ')
     if len(pw) < MIN_PASSWORD:
         raise WtError(f'too short: use at least {MIN_PASSWORD} characters')
     if getpass.getpass('Repeat it: ') != pw:
         raise WtError('the two passwords differ')
-    state = normalize(json.loads(Path(a.from_file).read_text(encoding='utf-8')) if a.from_file else None)
+    state = incoming or normalize(None)
     salt = secrets.token_bytes(16)
     put(encrypt(state, derive(pw, salt, ITER), salt, ITER), None)
     save_password(pw)
@@ -348,7 +380,8 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog='wt', description='Update the encrypted Work Tracker.')
     sub = p.add_subparsers(dest='cmd', required=True)
     x = sub.add_parser('init', help='set the password on this PC (and create the data the first time)')
-    x.add_argument('--from', dest='from_file', help='tracker.json to upload the first time')
+    x.add_argument('--from', dest='from_file',
+                   help='old tracker.json: its tasks are added (tasks already there are skipped)')
     x = sub.add_parser('list', help='show tasks')
     x.add_argument('--all', action='store_true', help='include done and postponed')
     x.add_argument('-q', help='search text')

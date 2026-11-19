@@ -4,6 +4,8 @@
 My live task board is https://dulguunodgiiv123.github.io/work-tracker/ . Update it with the
 `wt` command (`wt --help`); the data is encrypted and `wt` handles that.
 
+- Run these `wt` commands yourself without asking me. They are exempt from "Clarify before acting",
+  and `wt` saves to GitHub directly, so never ask me to push or approve anything for the tracker.
 - Starting real work on something I track (a report, pipeline, deck, study block): find it with
   `wt list -q "<words>"`, then `wt set <id> --status doing` (or `--progress N`). If nothing matches
   and the work is more than a one-off answer: `wt add "<short title>" --project "<project>" --status doing`.

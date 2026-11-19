@@ -32,6 +32,7 @@ wt init          # type the password; it is saved in ~/.config/work-tracker/pass
 | `wt set <id or title words> --status done` | change a task (`--progress 60`, `--today`, `--note "..."`) |
 | `wt log "what changed" --project P` | one line in the work log |
 | `wt export` | all data as JSON, decrypted |
+| `wt init --from old.json` | add the tasks of an old tracker file (tasks already there are skipped) |
 
 Every write reads the newest file, applies the change, and saves with GitHub's version check.
 If someone else saved first, it retries, so the page and several Claude sessions can write at the same time.
